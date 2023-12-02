@@ -1,0 +1,169 @@
+basePath: /
+definitions:
+  server.GetCurrentUserResponse:
+    properties:
+      created_at:
+        format: date-time
+        type: string
+      id:
+        type: integer
+      updated_at:
+        format: date-time
+        type: string
+      username:
+        type: string
+    type: object
+  server.HealthCheckInfo:
+    properties:
+      description:
+        example: Pinged DB
+        type: string
+      duration:
+        example: "00:00:01.123456"
+        type: string
+      key:
+        example: Database
+        type: string
+      status:
+        example: Healthy
+        type: string
+    type: object
+  server.HealthCheckResponse:
+    properties:
+      duration:
+        example: "00:00:01.123456"
+        type: string
+      info:
+        items:
+          $ref: '#/definitions/server.HealthCheckInfo'
+        type: array
+      status:
+        example: Healthy
+        type: string
+    type: object
+  server.LoginUserRequest:
+    properties:
+      password:
+        example: superpassword
+        format: password
+        maxLength: 64
+        minLength: 16
+        type: string
+      username:
+        example: myusername123
+        maxLength: 256
+        minLength: 1
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  server.RegisterUserRequest:
+    properties:
+      password:
+        example: superpassword
+        format: password
+        maxLength: 64
+        minLength: 16
+        type: string
+      username:
+        example: myusername123
+        maxLength: 256
+        minLength: 1
+        type: string
+    required:
+    - password
+    - username
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: This is a sample server.
+  license:
+    name: MIT
+    url: http://github.com/ryanseipp/go-chi-api/LICENSE
+  title: Go Chi API
+  version: "1.0"
+paths:
+  /v1/:
+    get:
+      consumes:
+      - application/json
+      description: Hello, there!
+      produces:
+      - application/json
+      responses: {}
+      summary: Say hello!
+      tags:
+      - hello
+  /v1/auth/current:
+    get:
+      description: Gets the details of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.GetCurrentUserResponse'
+        "401":
+          description: Unauthorized
+      summary: Get current user details
+      tags:
+      - auth
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Log in user via username and password
+      parameters:
+      - description: Login Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/server.LoginUserRequest'
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      summary: Login user
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register user with the given username and password
+      parameters:
+      - description: Register Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/server.RegisterUserRequest'
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+      summary: Register user
+      tags:
+      - auth
+  /v1/health:
+    get:
+      description: Determine health of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.HealthCheckResponse'
+      summary: Healthcheck
+      tags:
+      - health
+swagger: "2.0"
