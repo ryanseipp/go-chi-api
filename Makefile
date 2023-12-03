@@ -24,7 +24,7 @@ build: swagger
 	@go build -o main cmd/api/main.go
 
 # Run the application
-run: swagger
+run: build
 	@go run cmd/api/main.go
 
 # Create DB container

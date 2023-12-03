@@ -1,7 +1,10 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,15 +18,21 @@ import (
 )
 
 type Server struct {
+	server   *http.Server
 	port     int
 	db       database.Service
 	auth     authentication.Service
 	validate *validator.Validate
 }
 
-func NewServer() *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	NewServer := &Server{
+func NewServer() *Server {
+	portStr := os.Getenv("PORT")
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port > math.MaxUint16 {
+		log.Fatalf("Error: PORT is not a valid port (%s)", portStr)
+	}
+
+	server := &Server{
 		port:     port,
 		db:       database.New(),
 		auth:     authentication.New(),
@@ -31,15 +40,28 @@ func NewServer() *http.Server {
 	}
 
 	// Declare Server config
-	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+	server.server = &http.Server{
+		Addr:         fmt.Sprintf(":%d", server.port),
+		Handler:      server.RegisterRoutes(),
 		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
+		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
 
 	return server
+}
+
+func (s *Server) ListenAndServe() error {
+	log.Println(fmt.Sprintf("Starting server at %s", s.server.Addr))
+	return s.server.ListenAndServe()
+}
+
+func (s *Server) Shutdown() error {
+	log.Println("Shutdown requested, gracefully closing connections. This may take a minute...")
+	stopCtx, cancelStopCtx := context.WithTimeout(context.Background(), time.Minute)
+	defer cancelStopCtx()
+
+	return s.server.Shutdown(stopCtx)
 }
 
 type JsonTime struct {

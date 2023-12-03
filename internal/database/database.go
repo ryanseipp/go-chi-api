@@ -46,7 +46,7 @@ func New() Service {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Connected to db at ", connStr)
+
 	s := &service{db: db}
 	return s
 }
