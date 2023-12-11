@@ -55,6 +55,17 @@ func (s *Server) loginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if hashResult == authentication.ValidRehashNeeded {
+		passwordHash, err := s.auth.HashPassword(request.Password)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		user.PasswordHash = passwordHash
+	}
+
 	if err := s.auth.SetAuthenticationCookie(w, user); err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -89,6 +100,7 @@ func (s *Server) registerUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	user := domain.NewUser(request.Username, passwordHash)

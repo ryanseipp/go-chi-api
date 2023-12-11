@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	_ "go-chi-api/docs"
 	"go-chi-api/internal/server"
@@ -11,6 +12,11 @@ import (
 	"syscall"
 )
 
+const (
+	serviceName    = "go-chi-api"
+	serviceVersion = "1.0"
+)
+
 // @title        Go Chi API
 // @version      1.0
 // @description  This is a sample server.
@@ -19,7 +25,11 @@ import (
 // @host         localhost:3000
 // @BasePath     /
 func main() {
-	server := server.NewServer()
+	server, err := server.NewServer(context.Background(), serviceName, serviceVersion)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	go func() {
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalln("Error:", err)

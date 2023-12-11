@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -12,6 +13,7 @@ import (
 
 	"go-chi-api/internal/authentication"
 	"go-chi-api/internal/database"
+	"go-chi-api/internal/otel"
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/joho/godotenv/autoload"
@@ -23,13 +25,19 @@ type Server struct {
 	db       database.Service
 	auth     authentication.Service
 	validate *validator.Validate
+	otel     otel.Service
 }
 
-func NewServer() *Server {
+func NewServer(ctx context.Context, serviceName string, serviceVersion string) (*Server, error) {
 	portStr := os.Getenv("PORT")
 	port, err := strconv.Atoi(portStr)
 	if err != nil || port > math.MaxUint16 {
 		log.Fatalf("Error: PORT is not a valid port (%s)", portStr)
+	}
+
+	otelService, err := otel.New(ctx, serviceName, serviceVersion)
+	if err != nil {
+		return nil, err
 	}
 
 	server := &Server{
@@ -37,6 +45,7 @@ func NewServer() *Server {
 		db:       database.New(),
 		auth:     authentication.New(),
 		validate: validator.New(),
+		otel:     otelService,
 	}
 
 	// Declare Server config
@@ -48,7 +57,7 @@ func NewServer() *Server {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	return server
+	return server, nil
 }
 
 func (s *Server) ListenAndServe() error {
@@ -56,12 +65,16 @@ func (s *Server) ListenAndServe() error {
 	return s.server.ListenAndServe()
 }
 
-func (s *Server) Shutdown() error {
+func (s *Server) Shutdown() (err error) {
 	log.Println("Shutdown requested, gracefully closing connections. This may take a minute...")
 	stopCtx, cancelStopCtx := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelStopCtx()
+	defer func() {
+		err = errors.Join(err, s.otel.Shutdown(context.Background()))
+	}()
 
-	return s.server.Shutdown(stopCtx)
+	err = s.server.Shutdown(stopCtx)
+	return
 }
 
 type JsonTime struct {

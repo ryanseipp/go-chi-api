@@ -27,7 +27,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Use(middleware.Timeout(time.Minute))
 
 	s.swaggerRouter(r)
-	r.Route("/v1", func(r chi.Router) {
+	r.Route("/v1.0", func(r chi.Router) {
 		r.Get("/", s.HelloWorldHandler)
 		s.healthRouter(r)
 		s.authRouter(r)
